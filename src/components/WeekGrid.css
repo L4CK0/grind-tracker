@@ -1,0 +1,112 @@
+.week-grid-container {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.week-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+  background-color: var(--bg-card);
+}
+
+.week-table th,
+.week-table td {
+  padding: 12px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.task-header {
+  text-align: left !important;
+  padding-left: 16px !important;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  min-width: 140px;
+}
+
+.day-header {
+  min-width: 48px;
+  transition: var(--transition);
+}
+
+.day-header.today {
+  background-color: var(--accent-bg);
+}
+
+.day-name {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.day-header.today .day-number {
+  color: var(--accent);
+}
+
+.completion-row {
+  background-color: var(--bg-tertiary);
+}
+
+.completion-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 16px !important;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: left !important;
+}
+
+.completion-cell {
+  padding: 8px 4px !important;
+}
+
+.mini-progress {
+  width: 100%;
+  height: 3px;
+  background-color: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+
+.mini-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.mini-percentage {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
