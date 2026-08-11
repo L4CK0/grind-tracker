@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 export function useLocalStorage(key, initialValue) {
   const [storedValue, setStoredValue] = useState(() => {
@@ -6,7 +6,6 @@ export function useLocalStorage(key, initialValue) {
       const item = window.localStorage.getItem(key)
       return item ? JSON.parse(item) : initialValue
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error)
       return initialValue
     }
   })
@@ -17,24 +16,9 @@ export function useLocalStorage(key, initialValue) {
       setStoredValue(valueToStore)
       window.localStorage.setItem(key, JSON.stringify(valueToStore))
     } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error)
+      console.error(error)
     }
   }, [key, storedValue])
-
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === key && e.newValue) {
-        try {
-          setStoredValue(JSON.parse(e.newValue))
-        } catch (error) {
-          console.error(`Error parsing storage change for key "${key}":`, error)
-        }
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
-  }, [key])
 
   return [storedValue, setValue]
 }

@@ -32,14 +32,11 @@ export function getWeekDates(mondayStr) {
   return dates
 }
 
-export function getMonthName(dateStr) {
-  const [year, month] = dateStr.split('-')
-  const date = new Date(parseInt(year), parseInt(month) - 1)
-  const monthNames = [
-    'Január', 'Február', 'Március', 'Április', 'Május', 'Június',
-    'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December'
-  ]
-  return `${monthNames[date.getMonth()]} ${date.getFullYear()}`
+export function getMonthName(monthStr) {
+  const [year, month] = monthStr.split('-').map(Number)
+  const names = ['Január', 'Február', 'Március', 'Április', 'Május', 'Június',
+    'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December']
+  return `${names[month - 1]} ${year}`
 }
 
 export function getWeekNumber(dateStr) {
@@ -47,4 +44,45 @@ export function getWeekNumber(dateStr) {
   const startOfYear = new Date(date.getFullYear(), 0, 1)
   const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000))
   return Math.ceil((days + startOfYear.getDay() + 1) / 7)
+}
+
+export function getWeeksInMonth(monthStr) {
+  const [year, month] = monthStr.split('-').map(Number)
+  const date = new Date(year, month - 1, 1)
+  const weeks = []
+  let currentWeek = []
+  
+  while (date.getMonth() === month - 1 || currentWeek.length > 0) {
+    currentWeek.push({
+      date: formatDate(date),
+      dayName: ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'][date.getDay()],
+      dayNumber: date.getDate(),
+      isToday: formatDate(new Date()) === formatDate(date),
+      isCurrentMonth: date.getMonth() === month - 1
+    })
+    
+    if (date.getDay() === 6 || (date.getMonth() !== month - 1 && currentWeek.length >= 7)) {
+      while (currentWeek.length < 7) {
+        const nextDate = new Date(date)
+        nextDate.setDate(nextDate.getDate() + (7 - currentWeek.length))
+        currentWeek.push({
+          date: formatDate(nextDate),
+          dayName: ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'][nextDate.getDay()],
+          dayNumber: nextDate.getDate(),
+          isToday: formatDate(new Date()) === formatDate(nextDate),
+          isCurrentMonth: false
+        })
+      }
+      weeks.push({
+        weekNum: weeks.length + 1,
+        dates: [...currentWeek]
+      })
+      currentWeek = []
+      if (date.getMonth() !== month - 1) break
+    }
+    
+    date.setDate(date.getDate() + 1)
+  }
+  
+  return weeks
 }

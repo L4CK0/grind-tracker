@@ -1,12 +1,12 @@
 import React from 'react'
-import { LayoutDashboard, BarChart3, Settings } from 'lucide-react'
+import { LayoutDashboard, Image, Settings } from 'lucide-react'
 import './Navigation.css'
 
 export default function Navigation({ currentView, setCurrentView }) {
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'stats', icon: BarChart3, label: 'Statisztikák' },
-    { id: 'settings', icon: Settings, label: 'Beállítások' },
+    { id: 'gallery', icon: Image, label: 'Gallery' },
+    { id: 'settings', icon: Settings, label: 'Settings' },
   ]
 
   return (
@@ -14,14 +14,13 @@ export default function Navigation({ currentView, setCurrentView }) {
       {navItems.map((item) => {
         const Icon = item.icon
         const isActive = currentView === item.id
-        
         return (
           <button
             key={item.id}
             className={`nav-item ${isActive ? 'active' : ''}`}
             onClick={() => setCurrentView(item.id)}
           >
-            <Icon size={22} />
+            <Icon size={18} />
             <span className="nav-label">{item.label}</span>
           </button>
         )

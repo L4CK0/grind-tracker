@@ -41,22 +41,18 @@ export default function AddTaskForm({ addTask }) {
               type="text"
               value={taskName}
               onChange={(e) => setTaskName(e.target.value)}
-              placeholder="Új feladat neve..."
+              placeholder="Task name..."
               className="task-input"
               autoFocus
             />
-            <button type="submit" className="submit-btn" disabled={!taskName.trim()}>
-              Hozzáadás
-            </button>
-            <button type="button" className="cancel-btn" onClick={() => setIsOpen(false)}>
-              Mégse
-            </button>
+            <button type="submit" className="submit-btn" disabled={!taskName.trim()}>Add</button>
+            <button type="button" className="cancel-btn" onClick={() => setIsOpen(false)}>Cancel</button>
           </div>
         </form>
       ) : (
         <button className="add-task-btn" onClick={() => setIsOpen(true)}>
-          <Plus size={20} />
-          <span>Új feladat hozzáadása</span>
+          <Plus size={14} />
+          <span>Add task</span>
         </button>
       )}
     </div>

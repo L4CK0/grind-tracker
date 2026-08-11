@@ -7,16 +7,24 @@
 
 .main-content {
   flex: 1;
-  padding: 16px;
-  padding-bottom: 80px;
-  max-width: 1200px;
-  width: 100%;
+  padding: 12px;
+  padding-bottom: 72px;
+  max-width: 100%;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 @media (min-width: 768px) {
   .main-content {
-    padding: 24px;
-    padding-bottom: 24px;
+    padding: 16px 20px;
+    max-width: 800px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .main-content {
+    max-width: 1000px;
   }
 }
