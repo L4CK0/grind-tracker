@@ -1,167 +1,128 @@
 import React, { useState, useCallback } from 'react'
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
-import { formatDate } from '../utils/dateUtils'
+import { formatDate, getDaysInMonth } from '../utils/dateUtils'
 import './WeightTracker.css'
+
+const BAR_COLOR = '#7c3aed'
 
 export default function WeightTracker() {
   const [entries, setEntries] = useLocalStorage('grind-weight', [])
   const [newWeight, setNewWeight] = useState('')
   const [newNote, setNewNote] = useState('')
-  const [editingId, setEditingId] = useState(null)
-  const [editWeight, setEditWeight] = useState('')
-  const [editNote, setEditNote] = useState('')
-  const [timeRange, setTimeRange] = useState('ALL')
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
+
+  const today = formatDate(new Date())
+  const days = getDaysInMonth(currentMonth)
+  const barMax = 100
 
   const addEntry = useCallback((e) => {
     e.preventDefault()
     if (!newWeight.trim()) return
-    const entry = {
-      id: Date.now().toString(),
-      date: formatDate(new Date()),
-      weight: parseFloat(newWeight.replace(',', '.')),
-      note: newNote.trim()
-    }
-    setEntries(prev => [entry, ...prev])
-    setNewWeight('')
-    setNewNote('')
-  }, [newWeight, newNote, setEntries])
+    setEntries(prev => [{ id: Date.now().toString(), date: today, weight: parseFloat(newWeight.replace(',', '.')), note: newNote.trim() }, ...prev])
+    setNewWeight(''); setNewNote('')
+  }, [newWeight, newNote, today, setEntries])
 
-  const deleteEntry = useCallback((id) => {
-    setEntries(prev => prev.filter(e => e.id !== id))
-  }, [setEntries])
+  const deleteEntry = (id) => setEntries(prev => prev.filter(e => e.id !== id))
 
-  const startEdit = (entry) => {
-    setEditingId(entry.id)
-    setEditWeight(entry.weight.toString())
-    setEditNote(entry.note || '')
-  }
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date))
 
-  const saveEdit = (id) => {
-    setEntries(prev => prev.map(e =>
-      e.id === id ? { ...e, weight: parseFloat(editWeight.replace(',', '.')), note: editNote.trim() } : e
-    ))
-    setEditingId(null)
-  }
-
-  const filteredEntries = () => {
-    const now = new Date()
-    switch (timeRange) {
-      case '7D': const d7 = new Date(now); d7.setDate(d7.getDate() - 7); return entries.filter(e => new Date(e.date) >= d7)
-      case '30D': const d30 = new Date(now); d30.setDate(d30.getDate() - 30); return entries.filter(e => new Date(e.date) >= d30)
-      case '90D': const d90 = new Date(now); d90.setDate(d90.getDate() - 90); return entries.filter(e => new Date(e.date) >= d90)
-      default: return entries
-    }
-  }
-
-  const displayEntries = filteredEntries()
-  const sorted = [...displayEntries].reverse()
   const stats = {
-    current: displayEntries.length > 0 ? displayEntries[0].weight : '-',
-    min: displayEntries.length > 0 ? Math.min(...displayEntries.map(e => e.weight)) : '-',
-    max: displayEntries.length > 0 ? Math.max(...displayEntries.map(e => e.weight)) : '-',
-    change: displayEntries.length > 1 ? (displayEntries[0].weight - displayEntries[displayEntries.length - 1].weight).toFixed(1) : '0.0'
+    current: entries.length > 0 ? entries[0].weight.toFixed(1) : '-',
+    start: sorted.length > 0 ? sorted[0].weight.toFixed(1) : '-',
+    min: entries.length > 0 ? Math.min(...entries.map(e => e.weight)).toFixed(1) : '-',
+    max: entries.length > 0 ? Math.max(...entries.map(e => e.weight)).toFixed(1) : '-',
+    change: sorted.length > 1 ? (sorted[sorted.length - 1].weight - sorted[0].weight).toFixed(1) : '0.0'
   }
 
-  // Chart data
-  const chartWidth = 300
-  const chartHeight = 80
-  const weights = sorted.map(e => e.weight)
-  const minW = Math.min(...weights)
-  const maxW = Math.max(...weights)
-  const range = maxW - minW || 1
+  // Group entries by date for the chart
+  const chartData = days.map(day => {
+    const entry = entries.find(e => e.date === day.date)
+    return entry ? entry.weight : null
+  })
+
+  const navigateMonth = (dir) => {
+    setCurrentMonth(prev => {
+      const [y, m] = prev.split('-').map(Number)
+      const d = new Date(y, m - 1 + dir, 1)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    })
+  }
 
   return (
-    <div className="weight-section">
-      <h2 className="section-title">Body</h2>
-
-      {/* Stats */}
-      <div className="weight-stats-row">
-        <div className="w-stat">
-          <span className="w-stat-label">Current</span>
-          <span className="w-stat-val">{stats.current} kg</span>
+    <div className="ws">
+      <div className="th">
+        <div className="tbl"><h2 className="mtt">Body</h2><span className="subt">· Weight Tracker ·</span></div>
+        <div className="kpb small">
+          <div className="kpi"><span className="klb">Current</span><span className="kvl">{stats.current} kg</span></div>
+          <div className="kpi"><span className="klb">Change</span><span className={`kvl ${parseFloat(stats.change) < 0 ? 'd' : parseFloat(stats.change) > 0 ? 'u' : ''}`}>{stats.change} kg</span></div>
+          <div className="kpi"><span className="klb">Min</span><span className="kvl">{stats.min} kg</span></div>
+          <div className="kpi"><span className="klb">Max</span><span className="kvl">{stats.max} kg</span></div>
         </div>
-        <div className="w-stat">
-          <span className="w-stat-label">Change</span>
-          <span className={`w-stat-val ${parseFloat(stats.change) < 0 ? 'down' : parseFloat(stats.change) > 0 ? 'up' : ''}`}>
-            {stats.change} kg
-          </span>
-        </div>
-        <div className="w-stat">
-          <span className="w-stat-label">Min</span>
-          <span className="w-stat-val">{stats.min} kg</span>
-        </div>
-        <div className="w-stat">
-          <span className="w-stat-label">Max</span>
-          <span className="w-stat-val">{stats.max} kg</span>
+        <div className="nbt">
+          <button onClick={() => navigateMonth(-1)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button onClick={() => navigateMonth(1)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg></button>
         </div>
       </div>
 
-      {/* Time Range */}
-      <div className="time-range-row">
-        {['7D', '30D', '90D', 'ALL'].map(r => (
-          <button key={r} className={`range-btn ${timeRange === r ? 'active' : ''}`} onClick={() => setTimeRange(r)}>
-            {r}
-          </button>
-        ))}
-      </div>
+      <div className="wmc">
+        <form className="wfi" onSubmit={addEntry}>
+          <input type="number" inputMode="decimal" value={newWeight} onChange={e => setNewWeight(e.target.value)}
+            placeholder="Weight (kg)" className="wix2" min="0" max="100" step="0.1" />
+          <input value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Note" className="wnx2" />
+          <button type="submit" className="abt" disabled={!newWeight.trim()}>Add</button>
+        </form>
 
-      {/* Mini Chart */}
-      {sorted.length > 1 && (
-        <div className="weight-chart-mini">
-          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="weight-chart-svg" preserveAspectRatio="none">
-            <polyline
-              points={sorted.map((e, i) => `${(i / (sorted.length - 1)) * chartWidth},${chartHeight - 10 - ((e.weight - minW) / range) * (chartHeight - 20)}`).join(' ')}
-              fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" />
-            {sorted.map((e, i) => {
-              const x = (i / (sorted.length - 1)) * chartWidth
-              const y = chartHeight - 10 - ((e.weight - minW) / range) * (chartHeight - 20)
-              return (i === 0 || i === sorted.length - 1) ? <circle key={i} cx={x} cy={y} r="2" fill="#7c3aed" /> : null
-            })}
-          </svg>
-          <div className="chart-range-labels">
-            <span>{maxW} kg</span>
-            <span>{minW} kg</span>
-          </div>
-        </div>
-      )}
-
-      {/* Add Form */}
-      <form className="weight-form" onSubmit={addEntry}>
-        <input type="text" value={newWeight} onChange={e => setNewWeight(e.target.value)}
-          placeholder="Weight (kg)" className="weight-input" inputMode="decimal" />
-        <input type="text" value={newNote} onChange={e => setNewNote(e.target.value)}
-          placeholder="Note" className="note-input" />
-        <button type="submit" className="add-btn" disabled={!newWeight.trim()}>
-          <Plus size={14} />
-        </button>
-      </form>
-
-      {/* List */}
-      <div className="weight-list">
-        {displayEntries.map(entry => (
-          <div key={entry.id} className="weight-row">
-            {editingId === entry.id ? (
-              <div className="edit-row">
-                <input type="text" value={editWeight} onChange={e => setEditWeight(e.target.value)} className="edit-input-sm" />
-                <input type="text" value={editNote} onChange={e => setEditNote(e.target.value)} className="edit-input-sm" />
-                <button onClick={() => saveEdit(entry.id)} className="icon-btn save"><Check size={14} /></button>
-                <button onClick={() => setEditingId(null)} className="icon-btn"><X size={14} /></button>
+        <div className="wbc">
+          <div className="wba">
+            <div className="wby">
+              <span>100</span>
+              <span>80</span>
+              <span>60</span>
+              <span>40</span>
+              <span>20</span>
+              <span>0</span>
+            </div>
+            <div className="wbg">
+              <div className="wgl2" style={{ bottom: '100%' }} />
+              <div className="wgl2" style={{ bottom: '80%' }} />
+              <div className="wgl2" style={{ bottom: '60%' }} />
+              <div className="wgl2" style={{ bottom: '40%' }} />
+              <div className="wgl2" style={{ bottom: '20%' }} />
+              <div className="wgl2" style={{ bottom: '0%' }} />
+              <div className="wbb">
+                {chartData.map((weight, i) => (
+                  <div key={i} className="wbr2">
+                    {weight !== null && (
+                      <div className="wbf2" style={{
+                        height: `${(weight / barMax) * 100}%`,
+                        backgroundColor: BAR_COLOR
+                      }}>
+                        <span className="wbv2">{weight}</span>
+                      </div>
+                    )}
+                    <span className="wbl2">{days[i].dayNumber}</span>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <>
-                <span className="entry-date">{entry.date.slice(5)}</span>
-                <span className="entry-weight">{entry.weight} kg</span>
-                {entry.note && <span className="entry-note">{entry.note}</span>}
-                <div className="entry-actions">
-                  <button onClick={() => startEdit(entry)} className="icon-btn"><Edit2 size={12} /></button>
-                  <button onClick={() => deleteEntry(entry.id)} className="icon-btn danger"><Trash2 size={12} /></button>
-                </div>
-              </>
-            )}
+            </div>
           </div>
-        ))}
-        {displayEntries.length === 0 && <div className="empty-text">No data yet</div>}
+        </div>
+
+        <div className="wls2">
+          {entries.slice(0, 14).map(entry => (
+            <div key={entry.id} className="wlr2">
+              <span className="wdt">{entry.date}</span>
+              <span className="wwt">{entry.weight} kg</span>
+              {entry.note && <span className="wnt">{entry.note}</span>}
+              <button onClick={() => deleteEntry(entry.id)} className="ixx dg" style={{ marginLeft: 'auto' }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

@@ -1,86 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+
 :root {
-  --bg-primary: #171414;
-  --bg-secondary: #362f2f;
-  --bg-tertiary: #2a2323;
-  --bg-hover: #3d3535;
+  --bg-body: #20253d;
+  --bg-panel: #222941;
+  --bg-panel-secondary: #252c46;
+  --bg-chart: #27304a;
+  --bg-cell: #252c46;
   --text-primary: #f4f4f5;
-  --text-secondary: #a1a1aa;
-  --text-tertiary: #71717a;
+  --text-secondary: #b5bbc9;
+  --text-tertiary: #71798c;
+  --border: rgba(255,255,255,0.05);
+  --border-light: rgba(255,255,255,0.035);
   --accent-purple: #7c3aed;
   --accent-blue: #2563eb;
-  --accent-gradient: linear-gradient(135deg, #7c3aed, #2563eb);
-  --border: #362f2f;
-  --border-light: #2a2323;
-  --danger: #ef4444;
-  --radius: 6px;
-  --radius-sm: 4px;
-  --transition: all 0.15s ease;
-  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  
-  /* Week colors */
-  --week-1: #7c3aed;
-  --week-2: #52c9d9;
-  --week-3: #2234d6;
-  --week-4: #d188cd;
-  --week-5: #45cc9b;
-  
-  /* Progress ring */
-  --progress-ring: #c7bfb5;
+  --week-1: #8b5cf6;
+  --week-2: #60a5fa;
+  --week-3: #4fd1c5;
+  --week-4: #f472b6;
+  --week-5: #2dd4bf;
+  --radius: 4px;
+  --radius-sm: 3px;
+  --transition: all 0.1s ease;
+  --font: 'Nunito', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --cell-size: 15px;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html {
-  font-size: 13px;
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  font-family: var(--font);
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-}
-
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-button {
-  cursor: pointer;
-  border: none;
-  outline: none;
-  font-family: var(--font);
-  font-size: inherit;
-}
-
-input {
-  font-family: var(--font);
-  outline: none;
-  font-size: inherit;
-}
-
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
-}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { font-size:13px; -webkit-text-size-adjust:100%; }
+body { font-family:var(--font); background-color:var(--bg-body); color:var(--text-primary); min-height:100vh; -webkit-font-smoothing:antialiased; overflow-x:hidden; line-height:1.4; }
+#root { min-height:100vh; }
+button { cursor:pointer; border:none; outline:none; font-family:var(--font); font-size:inherit; }
+input { font-family:var(--font); outline:none; font-size:inherit; }
+input[type=number] { -moz-appearance:textfield; }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+::-webkit-scrollbar { width:3px; height:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:2px; }

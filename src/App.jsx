@@ -6,7 +6,7 @@ import MentalTracker from './components/MentalTracker'
 import WeightTracker from './components/WeightTracker'
 import Gallery from './components/Gallery'
 import { useLocalStorage } from './hooks/useLocalStorage'
-import { formatDate, getWeeksInMonth } from './utils/dateUtils'
+import { formatDate, getDaysInMonth } from './utils/dateUtils'
 import './App.css'
 
 const DEFAULT_TASKS = [
@@ -25,20 +25,17 @@ function App() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
 
-  const weeks = getWeeksInMonth(currentMonth)
+  const days = getDaysInMonth(currentMonth)
   const today = formatDate(new Date())
 
   const toggleCompletion = useCallback((taskId, dateStr) => {
     setCompletions(prev => {
-      const newCompletions = { ...prev }
-      if (!newCompletions[taskId]) newCompletions[taskId] = {}
-      newCompletions[taskId] = { ...newCompletions[taskId] }
-      if (newCompletions[taskId][dateStr]) {
-        delete newCompletions[taskId][dateStr]
-      } else {
-        newCompletions[taskId][dateStr] = true
-      }
-      return newCompletions
+      const n = { ...prev }
+      if (!n[taskId]) n[taskId] = {}
+      n[taskId] = { ...n[taskId] }
+      if (n[taskId][dateStr]) delete n[taskId][dateStr]
+      else n[taskId][dateStr] = true
+      return n
     })
   }, [setCompletions])
 
@@ -48,11 +45,7 @@ function App() {
 
   const deleteTask = useCallback((taskId) => {
     setTasks(prev => prev.filter(t => t.id !== taskId))
-    setCompletions(prev => {
-      const newCompletions = { ...prev }
-      delete newCompletions[taskId]
-      return newCompletions
-    })
+    setCompletions(prev => { const n = { ...prev }; delete n[taskId]; return n })
   }, [setTasks, setCompletions])
 
   const updateTaskName = useCallback((taskId, newName) => {
@@ -61,70 +54,44 @@ function App() {
 
   const navigateMonth = useCallback((direction) => {
     setCurrentMonth(prev => {
-      const [year, month] = prev.split('-').map(Number)
-      const date = new Date(year, month - 1 + direction, 1)
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      const [y, m] = prev.split('-').map(Number)
+      const d = new Date(y, m - 1 + direction, 1)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     })
   }, [])
 
   const calculateKpi = useCallback(() => {
-    let totalCompleted = 0
-    let currentStreak = 0
-
-    weeks.forEach(week => {
-      week.dates.forEach(date => {
-        tasks.forEach(task => {
-          if (completions[task.id]?.[date.date]) totalCompleted++
-        })
-      })
-    })
-
-    const checkDate = new Date(today)
+    let done = 0, streak = 0
+    days.forEach(day => tasks.forEach(task => { if (completions[task.id]?.[day.date]) done++ }))
+    const cd = new Date(today)
     for (let i = 0; i < 365; i++) {
-      const dateStr = formatDate(checkDate)
-      let anyCompleted = false
-      tasks.forEach(task => {
-        if (completions[task.id]?.[dateStr]) anyCompleted = true
-      })
-      if (anyCompleted && tasks.length > 0) {
-        currentStreak++
-      } else {
-        break
-      }
-      checkDate.setDate(checkDate.getDate() - 1)
+      const ds = formatDate(cd)
+      let any = false; tasks.forEach(task => { if (completions[task.id]?.[ds]) any = true })
+      if (any && tasks.length > 0) streak++; else break
+      cd.setDate(cd.getDate() - 1)
     }
-
-    return { totalCompleted, currentStreak }
-  }, [weeks, tasks, completions, today])
+    const possible = tasks.length * days.length
+    const pct = possible > 0 ? ((done / possible) * 100).toFixed(1) : '0.0'
+    return { done, streak, pct, habits: tasks.length }
+  }, [days, tasks, completions, today])
 
   const kpi = calculateKpi()
 
   const clearAllData = useCallback(() => {
-    if (window.confirm('Biztosan törlöd az összes adatot?')) {
-      setTasks(DEFAULT_TASKS)
-      setCompletions({})
-    }
+    if (window.confirm('Delete all?')) { setTasks(DEFAULT_TASKS); setCompletions({}) }
   }, [setTasks, setCompletions])
 
   const exportData = useCallback(() => {
-    const data = { tasks, completions, exportDate: new Date().toISOString(), version: '3.0' }
+    const data = { tasks, completions, v: '6.0', exportDate: new Date().toISOString() }
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `grind-${today}.json`
-    a.click()
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `grind-${today}.json`; a.click()
   }, [tasks, completions, today])
 
   const importData = useCallback((e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0]; if (!file) return
     const reader = new FileReader()
     reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target.result)
-        if (data.tasks) setTasks(data.tasks)
-        if (data.completions) setCompletions(data.completions)
-      } catch { alert('Hibás fájl!') }
+      try { const data = JSON.parse(ev.target.result); if (data.tasks) setTasks(data.tasks); if (data.completions) setCompletions(data.completions) } catch { alert('Invalid') }
     }
     reader.readAsText(file)
   }, [setTasks, setCompletions])
@@ -134,43 +101,20 @@ function App() {
       case 'dashboard':
         return (
           <>
-            <WeekGrid
-              tasks={tasks}
-              weeks={weeks}
-              completions={completions}
-              toggleCompletion={toggleCompletion}
-              addTask={addTask}
-              deleteTask={deleteTask}
-              updateTaskName={updateTaskName}
-              kpi={kpi}
-              navigateMonth={navigateMonth}
-              currentMonth={currentMonth}
-              today={today}
-            />
-            <MentalTracker />
-            <WeightTracker />
+            <WeekGrid tasks={tasks} days={days} completions={completions} toggleCompletion={toggleCompletion} addTask={addTask} deleteTask={deleteTask} updateTaskName={updateTaskName} kpi={kpi} navigateMonth={navigateMonth} currentMonth={currentMonth} today={today} />
+            <MentalTracker days={days} />
           </>
         )
-      case 'gallery':
-        return <Gallery />
-      case 'settings':
-        return (
-          <SettingsView
-            clearAllData={clearAllData}
-            exportData={exportData}
-            importData={importData}
-          />
-        )
-      default:
-        return null
+      case 'weight': return <WeightTracker />
+      case 'gallery': return <Gallery />
+      case 'settings': return <SettingsView clearAllData={clearAllData} exportData={exportData} importData={importData} />
+      default: return null
     }
   }
 
   return (
     <div className="app">
-      <main className="main-content">
-        {renderView()}
-      </main>
+      <main className="main-content">{renderView()}</main>
       <Navigation currentView={currentView} setCurrentView={setCurrentView} />
     </div>
   )

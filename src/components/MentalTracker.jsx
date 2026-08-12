@@ -1,142 +1,135 @@
-import React, { useState, useCallback } from 'react'
+import React from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
-import { formatDate } from '../utils/dateUtils'
 import './MentalTracker.css'
 
-export default function MentalTracker() {
+const WC = ['#8b5cf6', '#60a5fa', '#4fd1c5', '#f472b6', '#2dd4bf']
+
+export default function MentalTracker({ days }) {
   const [entries, setEntries] = useLocalStorage('grind-mental', [])
-  const [mood, setMood] = useState(5)
-  const [motivation, setMotivation] = useState(5)
-  const today = formatDate(new Date())
 
-  const todayEntry = entries.find(e => e.date === today)
-  const score = Math.round(((mood + motivation) / 20) * 100)
+  const getEntry = (date) => entries.find(e => e.date === date) || { mood: '', motivation: '' }
 
-  const saveEntry = useCallback(() => {
-    const existing = entries.find(e => e.date === today)
-    if (existing) {
-      setEntries(prev => prev.map(e => e.date === today ? { ...e, mood, motivation, score } : e))
-    } else {
-      setEntries(prev => [{ date: today, mood, motivation, score }, ...prev].slice(0, 365))
-    }
-  }, [today, mood, motivation, score, entries, setEntries])
-
-  const chartEntries = [...entries].reverse().slice(-30)
-
-  const getMoodColor = (val) => {
-    if (val >= 8) return '#45cc9b'
-    if (val >= 6) return '#52c9d9'
-    if (val >= 4) return '#c7bfb5'
-    if (val >= 2) return '#d188cd'
-    return '#ef4444'
+  const updateCell = (date, field, value) => {
+    const v = value === '' ? '' : Math.max(0, Math.min(10, parseInt(value) || 0))
+    setEntries(prev => {
+      const existing = prev.find(e => e.date === date)
+      if (existing) {
+        const updated = { ...existing, [field]: v, score: ((field === 'mood' ? v : existing.mood) + (field === 'motivation' ? v : existing.motivation)) * 5 }
+        return prev.map(e => e.date === date ? updated : e)
+      }
+      if (v === '') return prev
+      const newEntry = { date, mood: '', motivation: '', score: 0 }
+      newEntry[field] = v
+      newEntry.score = (newEntry.mood + newEntry.motivation) * 5
+      return [newEntry, ...prev]
+    })
   }
 
-  const getMotivationColor = (val) => {
-    if (val >= 8) return '#7c3aed'
-    if (val >= 6) return '#2234d6'
-    if (val >= 4) return '#52c9d9'
-    if (val >= 2) return '#d188cd'
-    return '#ef4444'
-  }
+  const chartEntries = [...entries].reverse().slice(-30).filter(e => e.mood !== '' && e.motivation !== '')
+
+  const weekGroups = []
+  for (let i = 0; i < days.length; i += 7) weekGroups.push(days.slice(i, Math.min(i + 7, days.length)))
 
   return (
-    <div className="mental-tracker">
-      <h2 className="section-title">Mental State</h2>
-
-      {/* Today's Input */}
-      <div className="mental-card">
-        <div className="slider-group">
-          <div className="slider-header">
-            <span className="slider-label">Mood</span>
-            <span className="slider-value" style={{ color: getMoodColor(mood) }}>{mood}/10</span>
-          </div>
-          <input type="range" min="0" max="10" value={mood} onChange={e => setMood(Number(e.target.value))}
-            className="slider mood-slider" style={{ '--slider-color': getMoodColor(mood) }} />
-          <div className="slider-ends">
-            <span>0</span><span>10</span>
-          </div>
-        </div>
-
-        <div className="slider-group">
-          <div className="slider-header">
-            <span className="slider-label">Motivation</span>
-            <span className="slider-value" style={{ color: getMotivationColor(motivation) }}>{motivation}/10</span>
-          </div>
-          <input type="range" min="0" max="10" value={motivation} onChange={e => setMotivation(Number(e.target.value))}
-            className="slider motivation-slider" style={{ '--slider-color': getMotivationColor(motivation) }} />
-          <div className="slider-ends">
-            <span>0</span><span>10</span>
-          </div>
-        </div>
-
-        <div className="score-display">
-          <span className="score-label">Score</span>
-          <span className="score-value">{score}%</span>
-        </div>
-
-        <button className="save-btn" onClick={saveEntry}>
-          {todayEntry ? 'Update' : 'Save'}
-        </button>
+    <div className="dr">
+      <div className="th">
+        <div className="tbl"><h2 className="mtt">Mental State</h2><span className="subt">· Mindset ·</span></div>
       </div>
 
-      {/* Chart */}
+      <div className="mtr">
+        <div className="hnp">
+          <div className="hnh">Metrics</div>
+          <div className="hnr"><span className="hnt" style={{ color: '#60d5d1' }}>Mood</span></div>
+          <div className="hnr"><span className="hnt" style={{ color: '#7ea6e8' }}>Motivation</span></div>
+          <div className="hnr"><span className="hnt">Score</span></div>
+        </div>
+        <div className="wgp">
+          <div className="wgs">
+            <table className="htt">
+              <thead>
+                <tr>
+                  {weekGroups.map((week, wi) => (
+                    <th key={wi} colSpan={week.length} className="whc" style={{ backgroundColor: WC[wi] }}>
+                      <span className="wht">Week {wi + 1}</span>
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {days.map((day, di) => {
+                    const wi = Math.min(Math.floor(di / 7), 4)
+                    return (
+                      <th key={day.date} className={`dhc ${day.isToday ? 'tdy' : ''}`} style={{ borderBottomColor: WC[wi] }}>
+                        <span className="dhn">{day.dayName}</span>
+                        <span className="dhn2">{day.dayNumber}</span>
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {['Mood', 'Motivation', 'Score'].map(metric => (
+                  <tr key={metric} className="htr">
+                    {days.map((day, di) => {
+                      const entry = getEntry(day.date)
+                      const wi = Math.min(Math.floor(di / 7), 4)
+                      if (metric === 'Score') {
+                        const s = entry.mood !== '' && entry.motivation !== '' ? (entry.mood + entry.motivation) * 5 : ''
+                        return (
+                          <td key={day.date} className="ctd">
+                            <span style={{ fontSize: '8px', color: s !== '' ? WC[wi] : '#3a4058', fontWeight: 700 }}>{s !== '' ? s + '%' : ''}</span>
+                          </td>
+                        )
+                      }
+                      const val = metric === 'Mood' ? entry.mood : entry.motivation
+                      return (
+                        <td key={day.date} className="ctd">
+                          <input type="number" min="0" max="10" value={val}
+                            onChange={e => updateCell(day.date, metric.toLowerCase(), e.target.value)}
+                            className="mci" style={{ color: val !== '' ? (metric === 'Mood' ? '#60d5d1' : '#7ea6e8') : '#3a4058' }} placeholder="" />
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="anp">
+          <div className="anh">Analysis</div>
+          {weekGroups.map((week, wi) => {
+            const we = week.map(day => getEntry(day.date)).filter(e => e.mood !== '' && e.motivation !== '')
+            const avg = we.length > 0 ? Math.round(we.reduce((sum, e) => sum + ((e.mood + e.motivation) * 5), 0) / we.length) : 0
+            return (
+              <div key={wi} className="anr">
+                <span className="ant">Week {wi + 1}</span>
+                <div className="anbw"><div className="anbf" style={{ width: `${avg}%`, background: WC[wi] }} /></div>
+                <span className="anpc">{avg}%</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       {chartEntries.length > 1 && (
-        <div className="mental-card">
-          <h3 className="chart-title">Trend (30 days)</h3>
-          <div className="mini-chart">
-            <svg viewBox="0 0 300 100" className="chart-svg" preserveAspectRatio="none">
-              {/* Grid lines */}
-              <line x1="0" y1="25" x2="300" y2="25" stroke="#362f2f" strokeWidth="0.5" />
-              <line x1="0" y1="50" x2="300" y2="50" stroke="#362f2f" strokeWidth="0.5" />
-              <line x1="0" y1="75" x2="300" y2="75" stroke="#362f2f" strokeWidth="0.5" />
-
-              {/* Mood line */}
-              <polyline
-                points={chartEntries.map((e, i) => `${(i / (chartEntries.length - 1)) * 300},${100 - (e.mood / 10) * 100}`).join(' ')}
-                fill="none" stroke={getMoodColor(5)} strokeWidth="2" strokeLinecap="round" />
-
-              {/* Motivation line */}
-              <polyline
-                points={chartEntries.map((e, i) => `${(i / (chartEntries.length - 1)) * 300},${100 - (e.motivation / 10) * 100}`).join(' ')}
-                fill="none" stroke={getMotivationColor(5)} strokeWidth="2" strokeLinecap="round" />
+        <div className="chp">
+          <div className="chy"><span>10</span><span>5</span><span>0</span></div>
+          <div className="cha">
+            <svg viewBox="0 0 600 100" className="chsv" preserveAspectRatio="none">
+              <polyline points={chartEntries.map((e, i) => `${(i / (chartEntries.length - 1)) * 600},${100 - (e.mood / 10) * 100}`).join(' ')}
+                fill="none" stroke="#60d5d1" strokeWidth="1" strokeLinecap="round" />
+              {chartEntries.map((e, i) => <circle key={`m-${i}`} cx={(i / (chartEntries.length - 1)) * 600} cy={100 - (e.mood / 10) * 100} r="1.5" fill="#60d5d1" />)}
+              <polyline points={chartEntries.map((e, i) => `${(i / (chartEntries.length - 1)) * 600},${100 - (e.motivation / 10) * 100}`).join(' ')}
+                fill="none" stroke="#7ea6e8" strokeWidth="1" strokeLinecap="round" />
+              {chartEntries.map((e, i) => <circle key={`v-${i}`} cx={(i / (chartEntries.length - 1)) * 600} cy={100 - (e.motivation / 10) * 100} r="1.5" fill="#7ea6e8" />)}
             </svg>
-            <div className="chart-legend">
-              <span style={{ color: getMoodColor(5) }}>● Mood</span>
-              <span style={{ color: getMotivationColor(5) }}>● Motivation</span>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 4 }}>
+              <span style={{ color: '#60d5d1', fontSize: '9px', fontWeight: 600 }}>● Mood</span>
+              <span style={{ color: '#7ea6e8', fontSize: '9px', fontWeight: 600 }}>● Motivation</span>
             </div>
           </div>
         </div>
       )}
-
-      {/* History */}
-      <div className="mental-card">
-        <h3 className="chart-title">History</h3>
-        <div className="history-list">
-          {entries.slice(0, 14).map(entry => (
-            <div key={entry.date} className="history-row">
-              <span className="history-date">{entry.date.slice(5)}</span>
-              <div className="history-bars">
-                <div className="history-bar-group">
-                  <span className="bar-label-mini">M</span>
-                  <div className="bar-bg">
-                    <div className="bar-fill" style={{ width: `${entry.mood * 10}%`, backgroundColor: getMoodColor(entry.mood) }} />
-                  </div>
-                  <span className="bar-val">{entry.mood}</span>
-                </div>
-                <div className="history-bar-group">
-                  <span className="bar-label-mini">V</span>
-                  <div className="bar-bg">
-                    <div className="bar-fill" style={{ width: `${entry.motivation * 10}%`, backgroundColor: getMotivationColor(entry.motivation) }} />
-                  </div>
-                  <span className="bar-val">{entry.motivation}</span>
-                </div>
-              </div>
-              <span className="history-score">{entry.score}%</span>
-            </div>
-          ))}
-          {entries.length === 0 && <div className="empty-text">No data yet</div>}
-        </div>
-      </div>
     </div>
   )
 }

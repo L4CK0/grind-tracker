@@ -1,35 +1,65 @@
-.settings-view { color: var(--text-primary); }
-.settings-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-
-.settings-group {
+.settings-root {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 16px;
+}
+
+.settings-panel {
+  background: var(--bg-panel);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .setting-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  gap: 12px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
   color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 500;
   cursor: pointer;
   transition: var(--transition);
   text-align: left;
+  width: 100%;
 }
 
-.setting-row:hover { background: var(--bg-tertiary); }
-.setting-row.danger:hover { color: var(--danger); border-color: var(--danger); }
+.setting-row:last-child {
+  border-bottom: none;
+}
 
-.version {
-  text-align: center;
+.setting-row:hover {
+  background: var(--bg-panel-secondary);
+}
+
+.setting-row.danger:hover {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.setting-row.danger:hover .setting-name {
+  color: #ef4444;
+}
+
+.setting-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setting-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.setting-desc {
+  font-size: 10px;
   color: var(--text-tertiary);
-  font-size: 11px;
-  margin-top: 24px;
+}
+
+.version-tag {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-tertiary);
   padding: 16px;
 }

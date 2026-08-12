@@ -17,25 +17,17 @@ export function getWeekDates(mondayStr) {
   const monday = new Date(mondayStr)
   const dates = []
   const dayNames = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V']
-  
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday)
     date.setDate(monday.getDate() + i)
-    dates.push({
-      date: formatDate(date),
-      dayName: dayNames[i],
-      dayNumber: date.getDate(),
-      isToday: formatDate(new Date()) === formatDate(date)
-    })
+    dates.push({ date: formatDate(date), dayName: dayNames[i], dayNumber: date.getDate(), isToday: formatDate(new Date()) === formatDate(date) })
   }
-  
   return dates
 }
 
 export function getMonthName(monthStr) {
   const [year, month] = monthStr.split('-').map(Number)
-  const names = ['Január', 'Február', 'Március', 'Április', 'Május', 'Június',
-    'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December']
+  const names = ['Január', 'Február', 'Március', 'Április', 'Május', 'Június', 'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December']
   return `${names[month - 1]} ${year}`
 }
 
@@ -46,43 +38,31 @@ export function getWeekNumber(dateStr) {
   return Math.ceil((days + startOfYear.getDay() + 1) / 7)
 }
 
+export function getDaysInMonth(monthStr) {
+  const [year, month] = monthStr.split('-').map(Number)
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const days = []
+  for (let i = 1; i <= daysInMonth; i++) {
+    const date = new Date(year, month - 1, i)
+    days.push({ date: formatDate(date), dayName: ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'][date.getDay()], dayNumber: i, isToday: formatDate(new Date()) === formatDate(date) })
+  }
+  return days
+}
+
 export function getWeeksInMonth(monthStr) {
   const [year, month] = monthStr.split('-').map(Number)
   const date = new Date(year, month - 1, 1)
   const weeks = []
   let currentWeek = []
-  
   while (date.getMonth() === month - 1 || currentWeek.length > 0) {
-    currentWeek.push({
-      date: formatDate(date),
-      dayName: ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'][date.getDay()],
-      dayNumber: date.getDate(),
-      isToday: formatDate(new Date()) === formatDate(date),
-      isCurrentMonth: date.getMonth() === month - 1
-    })
-    
+    currentWeek.push({ date: formatDate(date), dayName: ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'][date.getDay()], dayNumber: date.getDate(), isToday: formatDate(new Date()) === formatDate(date), isCurrentMonth: date.getMonth() === month - 1 })
     if (date.getDay() === 6 || (date.getMonth() !== month - 1 && currentWeek.length >= 7)) {
-      while (currentWeek.length < 7) {
-        const nextDate = new Date(date)
-        nextDate.setDate(nextDate.getDate() + (7 - currentWeek.length))
-        currentWeek.push({
-          date: formatDate(nextDate),
-          dayName: ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'][nextDate.getDay()],
-          dayNumber: nextDate.getDate(),
-          isToday: formatDate(new Date()) === formatDate(nextDate),
-          isCurrentMonth: false
-        })
-      }
-      weeks.push({
-        weekNum: weeks.length + 1,
-        dates: [...currentWeek]
-      })
+      while (currentWeek.length < 7) { const nd = new Date(date); nd.setDate(nd.getDate() + (7 - currentWeek.length)); currentWeek.push({ date: formatDate(nd), dayName: ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'][nd.getDay()], dayNumber: nd.getDate(), isToday: formatDate(new Date()) === formatDate(nd), isCurrentMonth: false }) }
+      weeks.push({ weekNum: weeks.length + 1, dates: [...currentWeek] })
       currentWeek = []
       if (date.getMonth() !== month - 1) break
     }
-    
     date.setDate(date.getDate() + 1)
   }
-  
   return weeks
 }

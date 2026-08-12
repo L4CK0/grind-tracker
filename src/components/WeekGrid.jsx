@@ -3,170 +3,157 @@ import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, Check, X } from 'lucide
 import { getMonthName } from '../utils/dateUtils'
 import './WeekGrid.css'
 
-const WEEK_COLORS = ['var(--week-1)', 'var(--week-2)', 'var(--week-3)', 'var(--week-4)', 'var(--week-5)']
-const MAX_TASKS = 20
+const WC = ['#8b5cf6', '#60a5fa', '#4fd1c5', '#f472b6', '#2dd4bf']
+const MAX = 20
 
-export default function WeekGrid({ tasks, weeks, completions, toggleCompletion, addTask, deleteTask, updateTaskName, kpi, navigateMonth, currentMonth, today }) {
+export default function WeekGrid({ tasks, days, completions, toggleCompletion, addTask, deleteTask, updateTaskName, kpi, navigateMonth, currentMonth, today }) {
   const [showAdd, setShowAdd] = useState(false)
   const [newName, setNewName] = useState('')
   const [newEmoji, setNewEmoji] = useState('')
   const [editingTask, setEditingTask] = useState(null)
   const [editValue, setEditValue] = useState('')
 
+  const weekGroups = []
+  for (let i = 0; i < days.length; i += 7) weekGroups.push(days.slice(i, Math.min(i + 7, days.length)))
+
   const handleAdd = (e) => {
     e.preventDefault()
-    if (tasks.length >= MAX_TASKS) {
-      alert(`Maximum ${MAX_TASKS} tasks reached`)
-      return
-    }
-    if (newName.trim()) {
-      addTask(newName.trim(), newEmoji || '📌')
-      setNewName('')
-      setNewEmoji('')
-      setShowAdd(false)
-    }
+    if (tasks.length >= MAX) { alert('Max 20'); return }
+    if (newName.trim()) { addTask(newName.trim(), newEmoji || '📌'); setNewName(''); setNewEmoji(''); setShowAdd(false) }
   }
 
-  const startEdit = (task) => {
-    setEditingTask(task.id)
-    setEditValue(task.name)
-  }
-
-  const saveEdit = () => {
-    if (editValue.trim() && editingTask) {
-      updateTaskName(editingTask, editValue.trim())
-    }
-    setEditingTask(null)
+  const getTaskStats = (taskId) => {
+    let done = 0
+    days.forEach(day => { if (completions[taskId]?.[day.date]) done++ })
+      const pct = days.length > 0 ? Math.round((done / days.length) * 100) : 0
+    return { done, total: days.length, pct }
   }
 
   return (
-    <div className="dashboard">
-      {/* KPI Bar */}
-      <div className="kpi-bar">
-        <div className="kpi-item">
-          <span className="kpi-label">Habits</span>
-          <span className="kpi-value">{tasks.length}</span>
+    <div className="dr">
+      {/* TOP HEADER */}
+      <div className="th">
+        <div className="tbl">
+          <h1 className="mtt">{getMonthName(currentMonth)}</h1>
+          <span className="subt">· Habit Tracker ·</span>
         </div>
-        <div className="kpi-item">
-          <span className="kpi-label">Completed</span>
-          <span className="kpi-value">{kpi.totalCompleted}</span>
-        </div>
-        <div className="kpi-item">
-          <span className="kpi-label">Progress</span>
-          <div className="progress-ring-container">
-            <svg viewBox="0 0 36 36" className="progress-ring">
-              <circle cx="18" cy="18" r="14" fill="none" stroke="#362f2f" strokeWidth="3" />
-              <circle cx="18" cy="18" r="14" fill="none" stroke="var(--progress-ring)" strokeWidth="3"
-                strokeDasharray={`${kpi.totalCompleted > 0 ? Math.min((kpi.totalCompleted / (tasks.length * weeks.length * 7)) * 100, 100) : 0}, 100`}
-                strokeLinecap="round" transform="rotate(-90 18 18)" />
-              <text x="18" y="20" textAnchor="middle" fill="#c7bfb5" fontSize="9" fontWeight="700">
-                {Math.round(kpi.totalCompleted > 0 ? (kpi.totalCompleted / (tasks.length * weeks.reduce((sum, w) => sum + w.dates.filter(d => d.isCurrentMonth).length, 0))) * 100 : 0)}%
-              </text>
-            </svg>
+        <div className="kpb">
+          <div className="kpi"><span className="klb">HABITS</span><span className="kvl">{kpi.habits}</span></div>
+          <div className="kpi"><span className="klb">DONE</span><span className="kvl">{kpi.done}</span></div>
+          <div className="kpi kprg">
+            <span className="klb">PROGRESS</span>
+            <div className="pbw"><div className="pbf" style={{ width: `${kpi.pct}%` }} /></div>
           </div>
+          <div className="kpi"><span className="klb">%</span><span className="kvl">{kpi.pct}%</span></div>
         </div>
-        <div className="kpi-item">
-          <span className="kpi-label">Streak</span>
-          <span className="kpi-value">{kpi.currentStreak}</span>
+        <div className="nbt">
+          <button onClick={() => navigateMonth(-1)}><ChevronLeft size={16} /></button>
+          <button onClick={() => navigateMonth(1)}><ChevronRight size={16} /></button>
         </div>
       </div>
 
-      {/* Month Header */}
-      <div className="month-header">
-        <button className="month-nav" onClick={() => navigateMonth(-1)}><ChevronLeft size={18} /></button>
-        <h2 className="month-title">{getMonthName(currentMonth)}</h2>
-        <button className="month-nav" onClick={() => navigateMonth(1)}><ChevronRight size={18} /></button>
-      </div>
+      {/* MAIN TRACKER */}
+      <div className="mtr">
+        {/* HABIT NAMES + STATS */}
+        <div className="hnp">
+          <div className="hnh">My Habits</div>
+          {tasks.map(task => {
+            const stats = getTaskStats(task.id)
+            return (
+              <div key={task.id} className="hnrw">
+                <div className="hnr">
+                  {editingTask === task.id ? (
+                    <div className="ei"><input value={editValue} onChange={e => setEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { updateTaskName(task.id, editValue.trim()); setEditingTask(null) } if (e.key === 'Escape') setEditingTask(null) }} className="eix" autoFocus /><button onClick={() => { updateTaskName(task.id, editValue.trim()); setEditingTask(null) }} className="ix s"><Check size={10} /></button><button onClick={() => setEditingTask(null)} className="ix"><X size={10} /></button></div>
+                  ) : (
+                    <div className="hnw">
+                      <span className="hnt" onDoubleClick={() => { setEditingTask(task.id); setEditValue(task.name) }}>{task.name}</span>
+                      <div className="ha"><button onClick={() => { setEditingTask(task.id); setEditValue(task.name) }} className="ixx"><Edit2 size={9} /></button><button onClick={() => { if (window.confirm('Delete?')) deleteTask(task.id) }} className="ixx dg"><Trash2 size={9} /></button></div>
+                    </div>
+                  )}
+                </div>
+                <div className="hst">
+                  <span className="hstx">Prog: {stats.pct}%</span>
+                  <span className="hstx">Done: {stats.done}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
 
-      {/* Task Grid */}
-      <div className="grid-container">
-        <div className="grid-scroll">
-          <table className="grid-table">
-            <thead>
-              <tr>
-                <th className="task-col">Tasks</th>
-                {weeks.map((week, wi) => (
-                  <th key={wi} colSpan={7} className="week-header" style={{ backgroundColor: WEEK_COLORS[wi] + '22', borderColor: WEEK_COLORS[wi] + '44' }}>
-                    Week {week.weekNum}
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                <th className="task-col"></th>
-                {weeks.map((week, wi) =>
-                  week.dates.map((day, di) => (
-                    <th key={`${wi}-${di}`} className={`day-cell ${day.isToday ? 'today' : ''} ${!day.isCurrentMonth ? 'other-month' : ''}`}
-                      style={{ borderColor: WEEK_COLORS[wi] + '33' }}>
-                      <span className="day-name">{day.dayName}</span>
-                      <span className="day-num">{day.dayNumber}</span>
+        {/* WEEK GRID */}
+        <div className="wgp">
+          <div className="wgs">
+            <table className="htt">
+              <thead>
+                <tr>
+                  {weekGroups.map((week, wi) => (
+                    <th key={wi} colSpan={week.length} className="whc" style={{ backgroundColor: WC[wi] }}>
+                      <span className="wht">Week {wi + 1}</span>
                     </th>
-                  ))
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map(task => (
-                <tr key={task.id} className="task-row">
-                  <td className="task-name-col">
-                    {editingTask === task.id ? (
-                      <div className="edit-inline">
-                        <input value={editValue} onChange={e => setEditValue(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingTask(null) }}
-                          className="edit-input-sm" autoFocus />
-                        <button onClick={saveEdit} className="icon-btn save"><Check size={12} /></button>
-                        <button onClick={() => setEditingTask(null)} className="icon-btn"><X size={12} /></button>
-                      </div>
-                    ) : (
-                      <div className="task-name-wrapper">
-                        <span className="task-name" onDoubleClick={() => startEdit(task)}>{task.name}</span>
-                        <div className="task-actions">
-                          <button onClick={() => startEdit(task)} className="icon-btn-sm"><Edit2 size={10} /></button>
-                          <button onClick={() => { if (window.confirm('Delete?')) deleteTask(task.id) }} className="icon-btn-sm danger"><Trash2 size={10} /></button>
-                        </div>
-                      </div>
-                    )}
-                  </td>
-                  {weeks.map((week, wi) =>
-                    week.dates.map((day, di) => {
+                  ))}
+                </tr>
+                <tr>
+                  {days.map((day, di) => {
+                    const wi = Math.min(Math.floor(di / 7), 4)
+                    return (
+                      <th key={day.date} className={`dhc ${day.isToday ? 'tdy' : ''}`} style={{ borderBottomColor: WC[wi] }}>
+                        <span className="dhn">{day.dayName}</span>
+                        <span className="dhn2">{day.dayNumber}</span>
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map(task => (
+                  <tr key={task.id} className="htr">
+                    {days.map((day, di) => {
                       const isChecked = completions[task.id]?.[day.date]
+                      const wi = Math.min(Math.floor(di / 7), 4)
                       return (
-                        <td key={`${wi}-${di}`} className={`check-cell ${day.isToday ? 'today' : ''} ${!day.isCurrentMonth ? 'other-month' : ''}`}
-                          style={{ borderColor: WEEK_COLORS[wi] + '22' }}>
-                          <button
-                            className={`cell-btn ${isChecked ? 'done' : ''}`}
-                            style={isChecked ? { backgroundColor: WEEK_COLORS[wi] } : { borderColor: WEEK_COLORS[wi] + '44' }}
-                            onClick={() => toggleCompletion(task.id, day.date)}
-                          />
+                        <td key={day.date} className={`ctd ${day.isToday ? 'tdy' : ''}`}>
+                          <button className={`cbt ${isChecked ? 'dn' : ''}`}
+                            style={isChecked ? { backgroundColor: WC[wi] } : { borderColor: WC[wi] + '80' }}
+                            onClick={() => toggleCompletion(task.id, day.date)}>
+                            {isChecked && <Check size={8} strokeWidth={3} />}
+                          </button>
                         </td>
                       )
-                    })
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ANALYSIS */}
+        <div className="anp">
+          <div className="anh">Analysis</div>
+          {tasks.map(task => {
+            const stats = getTaskStats(task.id)
+            return (
+              <div key={task.id} className="anr">
+<span className="ant">{task.emoji || task.name.charAt(0)}</span>
+                <div className="anbw"><div className="anbf" style={{ width: `${stats.pct}%` }} /></div>
+                <span className="anpc">{stats.pct}%</span>
+              </div>
+            )
+          })}
         </div>
       </div>
 
-      {/* Add Task */}
-      <div className="add-section">
+      {/* ADD TASK */}
+      <div className="ads">
         {showAdd ? (
-          <form className="add-form" onSubmit={handleAdd}>
-            <input value={newEmoji} onChange={e => setNewEmoji(e.target.value)} placeholder="📌" className="emoji-input" maxLength={2} />
-            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Task name..." className="name-input" autoFocus />
-            <button type="submit" className="add-btn" disabled={!newName.trim()}>Add</button>
-            <button type="button" className="cancel-btn" onClick={() => setShowAdd(false)}>Cancel</button>
+          <form className="adf" onSubmit={handleAdd}>
+            <input value={newEmoji} onChange={e => setNewEmoji(e.target.value)} placeholder="📌" className="aei" maxLength={2} />
+            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Task name..." className="ani" autoFocus />
+            <button type="submit" className="abt" disabled={!newName.trim()}>Add</button>
+            <button type="button" className="cbtx" onClick={() => setShowAdd(false)}>Cancel</button>
           </form>
         ) : (
-          <button className="add-task-btn" onClick={() => {
-            if (tasks.length >= MAX_TASKS) {
-              alert(`Maximum ${MAX_TASKS} tasks reached`)
-              return
-            }
-            setShowAdd(true)
-          }}>
-            <Plus size={14} /> Add task
-          </button>
+          <button className="atg" onClick={() => { if (tasks.length >= MAX) { alert('Max 20'); return } setShowAdd(true) }}><Plus size={12} /> Add task</button>
         )}
       </div>
     </div>
